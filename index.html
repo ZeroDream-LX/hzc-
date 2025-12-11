@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>适配版</title>
+    <style>
+        body{
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        button{
+            width: 100%;
+            height: 100%;
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            font-size: 2rem;
+            padding: 0;
+            background-color: rgba(125, 125, 125, 0);
+            border:none;
+            touch-action: manipulation;
+        }
+        .loading{
+            width: 80vw;
+            max-width: 400px;
+            height: 50px;
+            border:5px solid #fff;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border-radius: 30px;
+            transform: translate(-50%,-50%);
+            padding: 5px;
+        }
+        .loading-content{
+            height: 100%;
+            background-color: #fff;
+            display: block;
+            border-radius: 30px;
+            animation: loading 5s ease;
+        }
+        @keyframes loading {
+            0%{
+                width: 0%;
+            }
+            50%{
+                width: 50%;
+            }
+            100%{
+                width: 100%;
+            }
+        }
+        .imgs{
+            width: 80vw;
+            max-width: 800px;
+            aspect-ratio: 1/1;
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            border-radius: 30px;
+            transform: translate(-50%,-50%);
+        }
+        .imgs img{
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            object-fit: cover;
+            animation: img 5s ease-in-out;
+        }
+        @keyframes img{
+            0%{
+                transform: scale(0) rotate(0deg);
+            }
+            50%{
+                transform: scale(0.5) rotate(45deg);
+            }
+            100%{
+                transform: scale(1) rotate(0deg);
+            }
+        }
+        /* 基础样式：重置say的默认属性，提升层级避免被遮挡 */
+        .say{
+            position: absolute;
+            color: #fff;
+            display: flex;
+            font-size: 5vw;
+            z-index: 10; /* 确保文字在图片上方 */
+            margin: 0; /* 清除默认间距 */
+            padding: 0; /* 清除默认间距 */
+        }
+        /* ========== PC端样式（屏幕≥768px） ========== */
+        @media (min-width: 768px) {
+            .say{
+                /* 竖向排列（每个字一行） */
+                flex-direction: column;
+                /* 位置：图片左侧，与图片垂直居中对齐 */
+                top: 50%;
+                /* 计算左侧位置：图片左边缘再往左移20px（可根据需求调整） */
+                left: calc(50% - 40vw - 20px); /* 图片宽度是80vw，一半是40vw，往左移20px */
+                transform: translateY(-50%);
+                /* 可选：添加字间距 */
+                gap: 5px;
+                font-size: 3vw; /* PC端字体稍小，更协调 */
+            }
+        }
+        /* ========== 移动端样式（屏幕<768px） ========== */
+        @media (max-width: 767.98px) {
+            .say{
+                /* 横向排列（所有字一行） */
+                flex-direction: row;
+                /* 位置：图片上方居中 */
+                top: calc(50% - 40vw - 20px); /* 图片宽度80vw，一半40vw，往上移20px */
+                left: 50%;
+                transform: translateX(-50%);
+                /* 可选：添加字间距 */
+                gap: 8px;
+                font-size: 5vw; /* 移动端字体稍大，更清晰 */
+            }
+            /* 移动端图片稍微下移，避免与文字重叠 */
+            .imgs{
+                top: calc(50% + 10vw);
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="start" onclick="handleClick()" ontouchstart="handleClick()">准备好了吗？--点击开始--</button>
+    
+    <div class="loading" style="display: none;">
+        <span class="loading-content"></span>
+    </div>
+    <div class="imgs" style="display: none;">
+        <img src="./1.jpg" alt="图片">
+    </div>
+    <span class="say" style="display: none;">哥帅你不爱?</span>
+
+    <script>
+        let audio = null;
+
+        function handleClick() {
+            const start = document.querySelector('.start');
+            start.style.display = 'none';
+
+            const load = document.querySelector('.loading');
+            load.style.display = 'block';
+            const loading = document.querySelector('.loading-content');
+
+            if (!audio) {
+                audio = document.createElement('audio');
+                audio.src = './song.mp3';
+                audio.preload = 'auto';
+                document.body.appendChild(audio);
+            }
+
+            loading.onanimationend = () => {
+                load.style.display = "none";
+                song();
+            }
+        }
+
+        function song() {
+            const imgs = document.querySelector('.imgs');
+            const say = document.querySelector('.say');
+            imgs.style.display = 'block';
+            say.style.display = 'flex'; // 改为flex，确保布局生效
+
+            try {
+                if (typeof WeixinJSBridge !== 'undefined') {
+                    WeixinJSBridge.invoke('getNetworkType', {}, () => {
+                        audio.play();
+                    });
+                } else {
+                    audio.play();
+                }
+            } catch (err) {
+                console.log('音频自动播放失败，请点击页面播放', err);
+                document.body.addEventListener('click', () => {
+                    audio.play();
+                }, { once: true });
+            }
+        }
+    </script>
+</body>
+</html>
