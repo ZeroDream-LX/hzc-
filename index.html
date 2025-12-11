@@ -2,7 +2,6 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <!-- 强化微信端视口适配，添加viewport-fit=cover适配刘海屏 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>hzc-个人集</title>
     <style>
@@ -25,9 +24,9 @@
             padding: 0;
             background-color: rgba(125, 125, 125, 0);
             border:none;
-            touch-action: manipulation; /* 解决移动端点击延迟 */
-            z-index: 9999; /* 确保按钮在最上层，微信端可点击 */
-            position: relative; /* 配合z-index生效 */
+            touch-action: manipulation;
+            z-index: 9999;
+            position: relative;
         }
         .loading{
             width: 80vw;
@@ -89,55 +88,76 @@
                 transform: scale(1) rotate(0deg);
             }
         }
-        /* 基础样式：重置say的默认属性，提升层级避免被遮挡 */
         .say{
             position: absolute;
             color: #fff;
             display: flex;
-            z-index: 10; /* 确保文字在图片上方 */
-            margin: 0; /* 清除默认间距 */
-            padding: 0; /* 清除默认间距 */
-            display: none; /* 初始隐藏 */
+            z-index: 10;
+            margin: 0;
+            padding: 0;
+            display: none;
         }
-        /* ========== PC端样式（屏幕≥768px） ========== */
+        /* PC端样式（屏幕≥768px） */
         @media (min-width: 768px) {
             .say{
-                /* 竖向排列（每个字一行） */
                 flex-direction: column;
-                /* 位置：图片左侧，与图片垂直居中对齐 */
                 top: 50%;
-                /* 计算左侧位置：图片左边缘再往左移20px（可根据需求调整） */
-                left: calc(50% - 40vw - 20px); /* 图片宽度是80vw，一半是40vw，往左移20px */
+                left: calc(50% - 40vw - 20px);
                 transform: translateY(-50%);
-                /* 可选：添加字间距 */
                 gap: 5px;
-                font-size: 3vw; /* PC端字体稍小，更协调 */
+                font-size: 3vw;
             }
         }
-        /* ========== 移动端/微信端样式（屏幕<768px） ========== */
+        /* 移动端/微信端样式（屏幕<768px） */
         @media (max-width: 767.98px) {
             .say{
-                /* 横向排列（所有字一行） */
                 flex-direction: row;
-                /* 位置：图片上方居中 */
-                top: calc(50% - 40vw - 20px); /* 图片宽度80vw，一半40vw，往上移20px */
+                top: calc(50% - 40vw - 20px);
                 left: 50%;
                 transform: translateX(-50%);
-                /* 可选：添加字间距 */
                 gap: 8px;
-                font-size: 5vw; /* 移动端/微信端字体稍大，更清晰 */
+                font-size: 5vw;
             }
-            /* 移动端图片稍微下移，避免与文字重叠 */
             .imgs{
                 top: calc(50% + 10vw);
+            }
+        }
+        /* ===== 新增：微信端互动按钮样式 ===== */
+        #interactBtn {
+            /* 初始隐藏 */
+            display: none;
+            /* 固定尺寸和样式 */
+            width: 60vw;
+            max-width: 300px;
+            height: 44px; /* 微信端常用按钮高度 */
+            line-height: 44px;
+            font-size: 1.2rem;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #000;
+            border-radius: 22px;
+            position: absolute;
+            z-index: 20; /* 高于图片和文字 */
+            /* 位置：图片下方居中 */
+            left: 50%;
+            top: calc(50% + 50vw); /* 基于图片位置计算 */
+            transform: translateX(-50%);
+            /* 微信端点击体验优化 */
+            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
+            transition: background-color 0.3s;
+        }
+        #interactBtn:hover, #interactBtn:active {
+            background-color: #fff;
+        }
+        /* 移动端调整按钮位置 */
+        @media (max-width: 767.98px) {
+            #interactBtn {
+                top: calc(50% + 50vw + 20px);
             }
         }
     </style>
 </head>
 <body>
-    <!-- 按钮：添加防重复点击的样式，绑定点击+触摸事件 -->
     <button class="start" id="startBtn">准备好了吗？--点击开始--</button>
-    
     <div class="loading" id="loadingBox">
         <span class="loading-content" id="loadingContent"></span>
     </div>
@@ -145,46 +165,46 @@
         <img src="./1.jpg" alt="图片" id="mainImg">
     </div>
     <span class="say" id="sayBox">哥帅你不爱？</span>
+    <!-- ===== 新增：微信端互动按钮 ===== -->
+    <button id="interactBtn">点击播放声音</button>
 
     <script>
-        // ===== 全局变量定义 =====
+        // 全局变量定义
         const startBtn = document.getElementById('startBtn');
         const loadingBox = document.getElementById('loadingBox');
         const loadingContent = document.getElementById('loadingContent');
         const imgsBox = document.getElementById('imgsBox');
         const sayBox = document.getElementById('sayBox');
         const mainImg = document.getElementById('mainImg');
-        const imgSrc = mainImg.src; // 图片路径
-        const audioSrc = './song.mp3'; // 音频路径
-        let audio = null; // 音频对象
-        let isProcessing = false; // 防重复点击标记
-        let isWeixin = false; // 是否为微信环境
+        const interactBtn = document.getElementById('interactBtn'); // 新增：互动按钮
+        const imgSrc = mainImg.src;
+        const audioSrc = './song.mp3';
+        let audio = null;
+        let isProcessing = false;
+        let isWeixin = false;
 
-        // ===== 第一步：检测微信环境 =====
+        // 检测微信环境
         function checkWeixin() {
             const ua = navigator.userAgent.toLowerCase();
             if (ua.match(/MicroMessenger/i) === 'micromessenger') {
                 isWeixin = true;
-                // 监听微信核心桥接事件（音频播放关键）
                 document.addEventListener('WeixinJSBridgeReady', () => {
-                    initAudio(); // 微信环境下提前初始化音频
+                    initAudio();
                 }, false);
             } else {
-                initAudio(); // 非微信环境直接初始化音频
+                initAudio();
             }
         }
 
-        // ===== 第二步：图片预加载函数（返回Promise） =====
+        // 图片预加载
         function preloadImage(src) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 img.src = src;
-                // 图片加载完成
                 img.onload = () => {
                     resolve(img);
                     console.log('图片预加载完成');
                 };
-                // 图片加载失败
                 img.onerror = (err) => {
                     reject(err);
                     console.error('图片预加载失败：', err);
@@ -192,100 +212,90 @@
             });
         }
 
-        // ===== 第三步：初始化音频（兼容微信） =====
+        // 初始化音频
         function initAudio() {
-            if (audio) return; // 避免重复创建
+            if (audio) return;
             audio = document.createElement('audio');
             audio.src = audioSrc;
-            audio.preload = 'auto'; // 预加载音频
-            audio.volume = 1; // 音量设为最大
-            // 插入到DOM中（微信端需要DOM存在才能播放）
+            audio.preload = 'auto';
+            audio.volume = 1;
             document.body.appendChild(audio);
 
-            // 音频加载完成事件
             audio.addEventListener('canplay', () => {
                 console.log('音频加载完成，可播放');
             });
 
-            // 音频播放失败事件
             audio.addEventListener('error', (err) => {
                 console.error('音频加载/播放失败：', err);
                 alert('音频播放失败，请检查文件路径！');
             });
         }
 
-        // ===== 第四步：音频播放函数（兼容微信） =====
+        // 音频播放函数
         function playAudio() {
             if (!audio) return;
             try {
-                // 微信环境下强制触发播放（利用WeixinJSBridge）
                 if (isWeixin && typeof WeixinJSBridge !== 'undefined') {
                     WeixinJSBridge.invoke('getNetworkType', {}, () => {
                         audio.play().catch(err => {
-                            // 仍失败则提示用户点击页面播放
-                            handleAudioPlayFail();
+                            console.error('微信端音频播放失败：', err);
                         });
                     });
                 } else {
                     audio.play().catch(err => {
-                        handleAudioPlayFail();
+                        console.error('音频播放失败：', err);
                     });
                 }
                 console.log('音频播放触发');
+                // 播放后隐藏互动按钮（可选）
+                interactBtn.style.display = 'none';
             } catch (err) {
-                handleAudioPlayFail();
+                console.error('音频播放异常：', err);
             }
         }
 
-        // ===== 音频播放失败的降级处理 =====
-        function handleAudioPlayFail() {
-            console.log('音频自动播放失败，点击页面任意位置播放');
-            // 绑定一次点击事件，用户点击后播放
-            document.body.addEventListener('click', () => {
-                audio.play();
-            }, { once: true });
-            alert('音频自动播放失败，请点击页面任意位置播放');
-        }
-
-        // ===== 第五步：核心业务逻辑 =====
+        // 核心业务逻辑
         async function handleClick() {
-            // 防重复点击
             if (isProcessing) return;
             isProcessing = true;
             startBtn.style.display = 'none';
 
             try {
-                // 1. 预加载图片（等待加载完成）
                 await preloadImage(imgSrc);
-                // 2. 显示加载动画
                 loadingBox.style.display = 'block';
-                // 3. 加载动画结束后执行后续逻辑
                 loadingContent.onanimationend = () => {
                     loadingBox.style.display = 'none';
                     // 显示图片和文字
                     imgsBox.style.display = 'block';
-                    sayBox.style.display = isWeixin || window.innerWidth < 768 ? 'flex' : 'flex';
-                    // 播放音频（在用户交互链中执行，兼容微信）
-                    playAudio();
-                    // 重置防重复标记
+                    sayBox.style.display = 'flex';
+                    // ===== 新增：微信端显示互动按钮，非微信端直接播放音频 =====
+                    if (isWeixin) {
+                        interactBtn.style.display = 'block'; // 微信端显示按钮
+                    } else {
+                        playAudio(); // 非微信端自动播放
+                    }
                     isProcessing = false;
                 };
             } catch (err) {
-                // 图片加载失败的处理
                 alert('图片加载失败，请检查图片路径！');
                 isProcessing = false;
                 startBtn.style.display = 'block';
             }
         }
 
-        // ===== 初始化执行 =====
-        // 1. 检测微信环境并初始化音频
+        // 初始化执行
         checkWeixin();
-        // 2. 绑定按钮事件（点击+触摸，兼容移动端/微信）
+        // 绑定开始按钮事件
         startBtn.addEventListener('click', handleClick);
         startBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // 阻止默认触摸行为（避免微信端触发两次）
+            e.preventDefault();
             handleClick();
+        });
+        // ===== 新增：绑定互动按钮点击事件 =====
+        interactBtn.addEventListener('click', playAudio);
+        interactBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            playAudio();
         });
     </script>
 </body>
