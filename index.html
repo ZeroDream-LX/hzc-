@@ -307,6 +307,10 @@
             return `${year}/${month}/${day} ${hours}:${minutes}`;
         }
 
+        // 全局变量：存储message事件的源和origin（用于回传消息）
+        let messageSource = null;
+        let messageOrigin = null;
+
         // 历史消息数组
         const history_message = [];
         const mainEl = document.querySelector('.main');
@@ -325,7 +329,7 @@
             if (role === 'ai') {
                 html = `
                     <div class="ai ${isLoading ? 'ai-loading' : ''}">
-                        <img src="https://www.dmoe.cc/random.php" alt="AI头像">
+                        <img src="./img/ai.jpg" alt="AI头像">
                         <div class="answer">
                             <span>${timeStr}</span>
                             <span>${isLoading ? '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>' : content}</span>
@@ -335,7 +339,7 @@
             } else if (role === 'user') {
                 html = `
                     <div class="people">
-                        <img src="https://www.dmoe.cc/random.php" alt="用户头像">
+                        <img src="./img/human.jpg" alt="用户头像">
                         <div class="answer">
                             <span>${timeStr}</span>
                             <span>${content}</span>
@@ -349,7 +353,7 @@
             mainEl.scrollTop = mainEl.scrollHeight;
         }
 
-        // 移除加载动画并替换为AI回答
+        // 移除加载动画并替换为AI回答，同时回传消息给外部
         function updateAiMessage(content, time) {
             const loadingEl = mainEl.querySelector('.ai-loading');
             if (loadingEl) {
@@ -364,6 +368,14 @@
                 loadingEl.classList.remove('ai-loading');
                 // 自动滚动到底部
                 mainEl.scrollTop = mainEl.scrollHeight;
+            }
+
+            // 若存在外部消息源，则回传AI的回答
+            if (messageSource) {
+                messageSource.postMessage(content, messageOrigin);
+                // 回传后重置（可选：如果需要持续接收消息，可保留不重置）
+                // messageSource = null;
+                // messageOrigin = null;
             }
         }
 
@@ -408,11 +420,12 @@
                         role: 'assistant',
                         content: aiContent,
                     });
-                    // 更新AI消息（替换加载动画）
+                    // 更新AI消息（替换加载动画）并回传消息
                     updateAiMessage(aiContent, currentTime);
                 } catch (error) {
                     // 错误处理
-                    updateAiMessage('抱歉，我现在有点忙，请稍后再试～', currentTime);
+                    const errorMsg = '抱歉，我现在有点忙，请稍后再试～';
+                    updateAiMessage(errorMsg, currentTime);
                     console.error('请求失败：', error);
                 }
             });
@@ -451,11 +464,18 @@
                 sendMessage();
             }
         });
-		
-		window.addEventListener("message", function(event) {
-			console.log(event);
-					// event.source.postMessage("hi there yourself! the secret response is: rheeeeet!", event.origin);
-		}, false);
+
+        // 监听message事件，接收外部传来的消息
+        window.addEventListener("message", function(event) {
+            // 保存消息源和origin（用于回传）
+            messageSource = event.source;
+            messageOrigin = event.origin;
+            // 将外部消息填入输入框
+            questionEl.value = event.data;
+            // 自动发送消息给AI
+            sendMessage();
+            console.log('收到外部消息：', event.data);
+        }, false);
     </script>
 </body>
 </html>
