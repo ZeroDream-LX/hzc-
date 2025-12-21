@@ -1,323 +1,456 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>微信音频修复版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>AI助手小言</title>
     <style>
-        body{
+        * {
             margin: 0;
             padding: 0;
-            background-color: #000;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-            position: relative;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
         }
-        button{
+
+        body {
+            /* 深色背景渐变 */
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            position: relative;
+            min-height: 100vh;
+            padding: 20px 0; /* 上下内边距，避免内容贴边 */
+        }
+
+        /* 背景模糊层（增强深色层次感） */
+        .bck-filter {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
-            color: #fff;
-            text-align: center;
-            margin: 0;
-            font-size: 2rem;
-            padding: 0;
-            background-color: rgba(125, 125, 125, 0);
-            border:none;
-            touch-action: manipulation;
-            z-index: 9999;
-            position: relative;
+            background: rgba(10, 15, 30, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: -1;
         }
-        .loading{
-            width: 80vw;
-            max-width: 400px;
-            height: 50px;
-            border:5px solid #fff;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            border-radius: 30px;
-            transform: translate(-50%,-50%);
-            padding: 5px;
-            display: none;
-        }
-        .loading-content{
-            height: 100%;
-            background-color: #fff;
-            display: block;
-            border-radius: 30px;
-            animation: loading 5s ease;
-        }
-        @keyframes loading {
-            0%{
-                width: 0%;
-            }
-            50%{
-                width: 50%;
-            }
-            100%{
-                width: 100%;
-            }
-        }
-        .imgs{
-            width: 80vw;
-            max-width: 800px;
-            aspect-ratio: 1/1;
-            position: absolute;
-            left: 50%;
-            top: 50%;
-            border-radius: 30px;
-            transform: translate(-50%,-50%);
-            display: none;
-        }
-        .imgs img{
-            width: 100%;
-            height: 100%;
-            border-radius: 20px;
-            object-fit: cover;
-            animation: img 5s ease-in-out;
-        }
-        @keyframes img{
-            0%{
-                transform: scale(0) rotate(0deg);
-            }
-            50%{
-                transform: scale(0.5) rotate(45deg);
-            }
-            100%{
-                transform: scale(1) rotate(0deg);
-            }
-        }
-        .say{
-            position: absolute;
-            color: #fff;
+
+        /* 主容器：限制最大宽度+居中+半透明+毛玻璃 */
+        .container {
+            max-width: 800px; /* 限制最大宽度，可根据需求调整为768/900px */
+            width: 90%; /* 自适应宽度，移动端占90% */
+            margin: 0 auto; /* 居中 */
+            height: calc(100vh - 40px); /* 减去body的上下内边距 */
             display: flex;
-            z-index: 10;
-            margin: 0;
-            padding: 0;
-            display: none;
+            flex-direction: column;
+            background: rgba(25, 30, 50, 0.6); /* 半透明深色背景 */
+            backdrop-filter: blur(15px); /* 毛玻璃效果 */
+            border-radius: 12px; /* 圆角 */
+            border: 1px solid rgba(255, 255, 255, 0.1); /* 浅边框增强层次 */
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* 阴影增强立体感 */
+            overflow: hidden; /* 隐藏溢出内容 */
         }
-        @media (min-width: 768px) {
-            .say{
-                flex-direction: column;
-                top: 50%;
-                left: calc(50% - 40vw - 20px);
-                transform: translateY(-50%);
-                gap: 5px;
-                font-size: 3vw;
+
+        .main {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 15px;
+            margin-bottom: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: #444 #222; /* 深色滚动条 */
+        }
+
+        /* 滚动条样式（深色适配） */
+        .main::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .main::-webkit-scrollbar-thumb {
+            background-color: #444;
+            border-radius: 3px;
+        }
+
+        .main::-webkit-scrollbar-track {
+            background-color: #222;
+        }
+
+        /* 对话样式 */
+        .ai, .people {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        .ai img, .people img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+            border: 2px solid rgba(255, 255, 255, 0.1); /* 头像边框 */
+        }
+
+        .ai img {
+            margin-right: 12px;
+        }
+
+        .people {
+            flex-direction: row-reverse;
+        }
+
+        .people img {
+            margin-left: 12px;
+        }
+
+        .answer {
+            max-width: 70%;
+            background: rgba(35, 45, 70, 0.8); /* 半透明气泡背景 */
+            padding: 12px 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+            position: relative;
+            backdrop-filter: blur(5px); /* 气泡毛玻璃 */
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* AI对话气泡颜色 */
+        .ai .answer {
+            background: rgba(40, 60, 100, 0.8);
+            border-top-left-radius: 4px;
+        }
+
+        /* 用户对话气泡颜色 */
+        .people .answer {
+            background: rgba(60, 30, 80, 0.8);
+            border-top-right-radius: 4px;
+        }
+
+        .answer span:first-child {
+            display: block;
+            font-size: 12px;
+            color: #999; /* 浅色时间文字 */
+            margin-bottom: 6px;
+        }
+
+        .answer span:last-child {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #e5e5e5; /* 浅色主文字 */
+        }
+
+        /* 输入区域：半透明深色+毛玻璃 */
+        .human {
+            padding: 15px;
+            background: rgba(20, 25, 40, 0.8); /* 半透明背景 */
+            backdrop-filter: blur(10px); /* 毛玻璃 */
+            border-top: 1px solid rgba(255, 255, 255, 0.08); /* 上边框分隔 */
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        .question {
+            flex: 1;
+            height: auto;
+            min-height: 40px;
+            max-height: 150px;
+            padding: 10px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1); /* 浅色边框 */
+            border-radius: 20px;
+            outline: none;
+            resize: none;
+            font-size: 14px;
+            line-height: 1.5;
+            background: rgba(30, 35, 55, 0.6); /* 输入框半透明背景 */
+            color: #e5e5e5; /* 输入框文字颜色 */
+            backdrop-filter: blur(5px);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        /* 输入框聚焦样式 */
+        .question:focus {
+            border-color: #4d7cff; /* 高亮边框 */
+            box-shadow: 0 0 0 2px rgba(77, 124, 255, 0.2); /* 高亮阴影 */
+        }
+
+        /* 输入框占位符颜色 */
+        .question::placeholder {
+            color: #777;
+        }
+
+        .ques {
+            width: 80px;
+            height: 40px;
+            background: #4d7cff; /* 按钮主色（深色适配） */
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s, transform 0.2s;
+        }
+
+        .ques:hover {
+            background: #3a66e0; /* 按钮hover色 */
+            transform: scale(1.02); /* 轻微放大 */
+        }
+
+        .ques:disabled {
+            background: #444; /* 禁用状态颜色 */
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* 思考动画样式（深色适配） */
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #aaa; /* 浅色圆点（深色背景下更明显） */
+            animation: loading 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dot:nth-child(1) {
+            animation-delay: -0.32s;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: -0.16s;
+        }
+
+        @keyframes loading {
+            0%, 80%, 100% {
+                transform: scale(0);
+            }
+            40% {
+                transform: scale(1);
             }
         }
-        @media (max-width: 767.98px) {
-            .say{
-                flex-direction: row;
-                top: calc(50% - 40vw - 20px);
-                left: 50%;
-                transform: translateX(-50%);
-                gap: 8px;
-                font-size: 5vw;
+
+        /* 媒体查询 - 移动端适配 */
+        @media (max-width: 768px) {
+            .container {
+                width: 95%; /* 移动端更宽的占比 */
+                height: calc(100vh - 20px); /* 减少上下内边距 */
             }
-            .imgs{
-                top: calc(50% + 10vw);
+
+            .answer {
+                max-width: 85%;
             }
-        }
-        /* 微信端互动按钮样式 */
-        #interactBtn {
-            display: none;
-            width: 60vw;
-            max-width: 300px;
-            height: 44px;
-            line-height: 44px;
-            font-size: 1.2rem;
-            background-color: rgba(255, 255, 255, 0.8);
-            color: #000;
-            border-radius: 22px;
-            position: absolute;
-            z-index: 20;
-            left: 50%;
-            top: calc(50% + 50vw);
-            transform: translateX(-50%);
-            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.5);
-            transition: background-color 0.3s;
-        }
-        #interactBtn:hover, #interactBtn:active {
-            background-color: #fff;
-        }
-        @media (max-width: 767.98px) {
-            #interactBtn {
-                top: calc(50% + 50vw + 20px);
+
+            .ai img, .people img {
+                width: 36px;
+                height: 36px;
+            }
+
+            .human {
+                padding: 10px 15px;
+            }
+
+            .question {
+                min-height: 36px;
+            }
+
+            .ques {
+                width: 70px;
+                height: 36px;
             }
         }
-        /* 备用：显示音频元素（调试用，可隐藏） */
-        #audioElement {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            width: 200px;
-            height: 30px;
-            z-index: 999;
-            /* 调试时可显示，上线后隐藏 */
-            /* display: none; */
+
+        /* PC端适配（可选，可根据需求调整） */
+        @media (min-width: 900px) {
+            .container {
+                max-width: 900px; /* 大屏下稍宽 */
+            }
+
+            .answer {
+                max-width: 60%;
+            }
+
+            .answer span:last-child {
+                font-size: 15px;
+            }
         }
     </style>
 </head>
 <body>
-    <button class="start" id="startBtn">准备好了吗？--点击开始--</button>
-    <div class="loading" id="loadingBox">
-        <span class="loading-content" id="loadingContent"></span>
+    <div class="bck-filter"></div>
+    <div class="container">
+        <main class="main"></main>
+        <div class="human">
+            <textarea class="question" placeholder="请输入发送内容..." required></textarea>
+            <button type="submit" class="ques">
+                <svg t="1739275555700" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="4467" width="16" height="16">
+                    <path d="M933.546667 198.826667c-9.045333-13.653333-21.504-9.045333-22.528-8.874667L102.912 390.997333c-7.509333 1.877333-13.312 7.68-15.36 15.018667-2.048 7.509333 0 15.36 5.461333 20.821333l152.405333 151.552 43.690667 238.933333c0 0.512 1.706667 14.165333 16.042667 16.896 11.946667 2.218667 17.92-3.754667 18.261333-3.925333l97.450667-77.482667 76.288 75.946667c4.608 4.437333 10.752 6.826667 17.066667 6.144 6.314667-0.682667 11.946667-3.925333 15.701333-9.386667l403.968-602.794667C934.4 221.866667 941.226667 210.602667 933.546667 198.826667zM150.016 423.253333l611.84-152.064L268.970667 541.525333 150.016 423.253333zM314.538667 718.677333l-25.429333-139.434667 348.16-190.976L353.621333 595.456c0 0-3.754667 3.072-5.290667 5.12-1.365333 1.877333-2.730667 6.314667-2.730667 6.314667L314.538667 718.677333zM370.858667 675.84l30.890667 37.717333-53.248 42.325333L370.858667 675.84zM509.952 778.581333l-125.098667-153.088 0 0L831.146667 299.349333 509.952 778.581333z" p-id="4468" fill="#fff"></path>
+                </svg>
+                <span>发送</span>
+            </button>
+        </div>
     </div>
-    <div class="imgs" id="imgsBox">
-        <img src="./1.jpg" alt="图片" id="mainImg">
-    </div>
-    <span class="say" id="sayBox">哥帅你不爱</span>
-    <button id="interactBtn">点击播放声音</button>
-    <!-- 新增：直接在DOM中创建音频元素（微信端更兼容） -->
-    <audio id="audioElement" preload="auto" src="./song.mp3"></audio>
 
     <script>
-        // 全局变量
-        const startBtn = document.getElementById('startBtn');
-        const loadingBox = document.getElementById('loadingBox');
-        const loadingContent = document.getElementById('loadingContent');
-        const imgsBox = document.getElementById('imgsBox');
-        const sayBox = document.getElementById('sayBox');
-        const mainImg = document.getElementById('mainImg');
-        const interactBtn = document.getElementById('interactBtn');
-        // 直接使用DOM中的音频元素（不再动态创建）
-        const audio = document.getElementById('audioElement');
-        const imgSrc = mainImg.src;
-        let isProcessing = false;
-        let isWeixin = false;
+        // 工具函数：格式化时间
+        function formatTime(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // 月份从0开始，补0
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}/${month}/${day} ${hours}:${minutes}`;
+        }
 
-        // 1. 检测微信环境（添加详细日志）
-        function checkWeixin() {
-            const ua = navigator.userAgent.toLowerCase();
-            if (ua.match(/MicroMessenger/i) === 'micromessenger') {
-                isWeixin = true;
-                console.log('当前环境：微信内置浏览器');
-                // 微信端必须等待WeixinJSBridgeReady事件
-                document.addEventListener('WeixinJSBridgeReady', () => {
-                    console.log('WeixinJSBridgeReady事件触发');
-                    // 微信端强制加载音频
-                    audio.load();
-                }, false);
-            } else {
-                isWeixin = false;
-                console.log('当前环境：非微信浏览器');
+        // 历史消息数组
+        const history_message = [];
+        const mainEl = document.querySelector('.main');
+        const questionEl = document.querySelector('.question');
+        const sendBtnEl = document.querySelector('.ques');
+
+        // 初始化AI欢迎消息
+        const initTime = new Date();
+        renderMessage('ai', '你好，我是你的AI助手小言，请问有什么可以帮助你的吗？', initTime);
+
+        // 渲染消息函数
+        function renderMessage(role, content, time, isLoading = false) {
+            const timeStr = formatTime(time);
+            let html = '';
+
+            if (role === 'ai') {
+                html = `
+                    <div class="ai ${isLoading ? 'ai-loading' : ''}">
+                        <img src="https://www.dmoe.cc/random.php" alt="AI头像">
+                        <div class="answer">
+                            <span>${timeStr}</span>
+                            <span>${isLoading ? '<div class="loading"><div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div></div>' : content}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (role === 'user') {
+                html = `
+                    <div class="people">
+                        <img src="https://www.dmoe.cc/random.php" alt="用户头像">
+                        <div class="answer">
+                            <span>${timeStr}</span>
+                            <span>${content}</span>
+                        </div>
+                    </div>
+                `;
             }
-            // 音频加载日志
-            audio.addEventListener('loadedmetadata', () => {
-                console.log('音频元数据加载完成：时长', audio.duration, '秒');
-            });
-            audio.addEventListener('error', (e) => {
-                console.error('音频加载失败：', e.target.error);
-                // 错误类型提示
-                const errorMsg = {
-                    1: '音频加载被中止',
-                    2: '网络错误',
-                    3: '解码错误（格式不支持）',
-                    4: '资源未找到（路径错误）'
-                };
-                alert(`音频加载失败：${errorMsg[e.target.error.code] || '未知错误'}`);
-            });
+
+            mainEl.innerHTML += html;
+            // 自动滚动到底部
+            mainEl.scrollTop = mainEl.scrollHeight;
         }
 
-        // 2. 图片预加载
-        function preloadImage(src) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.src = src;
-                img.onload = () => {
-                    resolve(img);
-                    console.log('图片预加载完成');
-                };
-                img.onerror = (err) => {
-                    reject(err);
-                    console.error('图片预加载失败：', err);
-                };
-            });
+        // 移除加载动画并替换为AI回答
+        function updateAiMessage(content, time) {
+            const loadingEl = mainEl.querySelector('.ai-loading');
+            if (loadingEl) {
+                const timeStr = formatTime(time);
+                loadingEl.innerHTML = `
+                    <img src="./img/ai.jpg" alt="AI头像">
+                    <div class="answer">
+                        <span>${timeStr}</span>
+                        <span>${content}</span>
+                    </div>
+                `;
+                loadingEl.classList.remove('ai-loading');
+                // 自动滚动到底部
+                mainEl.scrollTop = mainEl.scrollHeight;
+            }
         }
 
-        // 3. 音频播放函数（极简逻辑，仅保留核心播放）
-        function playAudio() {
-            console.log('触发播放音频');
-            // 微信端特殊处理：直接调用WeixinJSBridge的play
-            try {
-                if (isWeixin) {
-                    // 微信端强制触发播放（最直接的方式）
-                    WeixinJSBridge.invoke('getNetworkType', {}, () => {
-                        audio.play().then(() => {
-                            console.log('微信端音频播放成功');
-                            interactBtn.style.display = 'none';
-                        }).catch((err) => {
-                            console.error('微信端音频播放失败：', err);
-                            alert('播放失败，请再次点击按钮或检查音频文件');
-                        });
+        // 发送消息处理函数
+        function sendMessage() {
+            const text = questionEl.value.trim();
+            // 验证输入：非空且不是纯空格
+            if (!text) return;
+
+            // 清空输入框
+            questionEl.value = '';
+            const currentTime = new Date();
+
+            // 渲染用户消息
+            renderMessage('user', text, currentTime);
+            // 添加到历史消息
+            history_message.push({
+                role: 'user',
+                content: text,
+            });
+
+            // 渲染AI加载状态
+            renderMessage('ai', '', currentTime, true);
+            // 禁用发送按钮
+            sendBtnEl.disabled = true;
+
+            // 发送请求到DeepSeek API
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'https://api.deepseek.com/chat/completions');
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            // 注意：实际项目中请将API Key存储在后端，前端通过接口调用，避免泄露
+            xhr.setRequestHeader('Authorization', 'Bearer sk-fbbe4c4f9ba14e629377397cb667b6b8');
+
+            xhr.addEventListener('loadend', () => {
+                // 启用发送按钮
+                sendBtnEl.disabled = false;
+                try {
+                    const response = JSON.parse(xhr.response);
+                    const aiContent = response.choices[0].message.content;
+                    // 添加到历史消息
+                    history_message.push({
+                        role: 'assistant',
+                        content: aiContent,
                     });
-                } else {
-                    // 非微信端直接播放
-                    audio.play().then(() => {
-                        console.log('非微信端音频播放成功');
-                        interactBtn.style.display = 'none';
-                    }).catch((err) => {
-                        console.error('非微信端音频播放失败：', err);
-                    });
+                    // 更新AI消息（替换加载动画）
+                    updateAiMessage(aiContent, currentTime);
+                } catch (error) {
+                    // 错误处理
+                    updateAiMessage('抱歉，我现在有点忙，请稍后再试～', currentTime);
+                    console.error('请求失败：', error);
                 }
-            } catch (err) {
-                console.error('播放函数异常：', err);
-                // 终极备用：让用户手动点击音频元素
-                alert('自动播放失败，请点击页面底部的音频控件播放');
-            }
+            });
+
+            // 请求参数
+            const data = {
+                "model": "deepseek-chat",
+                "frequency_penalty": 0,
+                "max_tokens": 2048,
+                "presence_penalty": 0,
+                "response_format": {
+                    "type": "text"
+                },
+                "stop": null,
+                "stream": false,
+                "stream_options": null,
+                "temperature": 1,
+                "top_p": 1,
+                "tools": null,
+                "tool_choice": "none",
+                "logprobs": false,
+                "top_logprobs": null,
+                "messages": [...history_message]
+            };
+
+            xhr.send(JSON.stringify(data));
         }
 
-        // 4. 核心业务逻辑
-        async function handleClick() {
-            if (isProcessing) return;
-            isProcessing = true;
-            startBtn.style.display = 'none';
+        // 绑定发送按钮点击事件
+        sendBtnEl.addEventListener('click', sendMessage);
 
-            try {
-                await preloadImage(imgSrc);
-                loadingBox.style.display = 'block';
-                loadingContent.onanimationend = () => {
-                    loadingBox.style.display = 'none';
-                    imgsBox.style.display = 'block';
-                    sayBox.style.display = 'flex';
-                    // 微信端显示互动按钮，非微信端直接播放
-                    if (isWeixin) {
-                        interactBtn.style.display = 'block';
-                    } else {
-                        playAudio();
-                    }
-                    isProcessing = false;
-                };
-            } catch (err) {
-                alert('图片加载失败，请检查图片路径！');
-                isProcessing = false;
-                startBtn.style.display = 'block';
+        // 绑定输入框回车发送（排除shift+回车）
+        questionEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault(); // 阻止换行
+                sendMessage();
             }
-        }
-
-        // 5. 事件绑定（原生事件，无嵌套）
-        // 开始按钮
-        startBtn.addEventListener('click', handleClick);
-        startBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            handleClick();
         });
-        // 互动按钮（极简绑定，直接触发playAudio）
-        interactBtn.addEventListener('click', playAudio);
-        interactBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            playAudio();
-        });
-
-        // 初始化
-        checkWeixin();
-        // 页面加载完成后预加载图片
-        window.onload = () => {
-            console.log('页面加载完成');
-            preloadImage(imgSrc).catch(err => console.log('图片预加载失败（页面加载时）：', err));
-        };
     </script>
 </body>
 </html>
