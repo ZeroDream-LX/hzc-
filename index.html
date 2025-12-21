@@ -451,6 +451,11 @@
                 sendMessage();
             }
         });
+		
+		window.addEventListener("message", function(event) {
+			console.log('123');
+					// event.source.postMessage("hi there yourself! the secret response is: rheeeeet!", event.origin);
+		}, false);
     </script>
 </body>
 </html>
